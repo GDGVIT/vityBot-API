@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>chatbot-api</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script>
+		var ws;
+		function onload(){
+			ws = new WebSocket("ws://localhost:8080/ws");
+
+			ws.onmessage = function(e){
+				$('#reply').show();
+				$('#reply').text(e.data)
+			}
+		}
+		function sendmsg(){
+			ws.send(document.getElementById('msg').value);
+		}
+	</script>
+</head>
+<body onload="onload();">
+	<strong>Message to be sent</strong><input type="text" name="msg" id="msg"/ onkeypress="sendmsg()">
+	<p id="reply"></p>
+	&nbsp;<!-- <input type="button" onclick="sendmsg();" value="Send" /> -->	
+
+</body>
+</html>
