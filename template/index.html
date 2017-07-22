@@ -7,10 +7,20 @@
 		var ws;
 		function onload(){
 			ws = new WebSocket("ws://localhost:8080/ws");
+			var $state = $('#state');
+			var $reply = $('#reply');
+			// $state.hide();
+			// $reply.hide();
 
-			ws.onmessage = function(e){
-				$('#reply').show();
-				$('#reply').text(e.data)
+			ws.onopen = function(){
+				// $state.show()
+				console.log('connection open');
+				
+			}
+
+			ws.onmessage = function(event){
+				// $('#reply').show();
+				$('#reply').text(event.data);
 			}
 		}
 		function sendmsg(){
@@ -19,8 +29,10 @@
 	</script>
 </head>
 <body onload="onload();">
-	<strong>Message to be sent</strong><input type="text" name="msg" id="msg"/ onkeypress="sendmsg()">
-	<p id="reply"></p>
+	<strong>Message to be sent</strong><input type="text" name="msg" id="msg" onkeypress="sendmsg();">
+	
+		<p id="reply"></p>
+		<br><br>
 	&nbsp;<!-- <input type="button" onclick="sendmsg();" value="Send" /> -->	
 
 </body>
