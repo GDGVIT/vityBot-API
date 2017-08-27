@@ -153,7 +153,7 @@ class BaseHandler(WebSocketHandler, User):
     @coroutine
     def on_close(self):
         print "connection closed"
-        if User.username != '':
+        if User.username != 'guest':
             yield db['user_session'].update({'session_id': User.session_id},
                                             {'username': User.username,
                                              'session_id': User.session_id,
