@@ -12,8 +12,10 @@ from motor import MotorClient as Client
 import uuid
 import base64
 import requests
+import datetime
 
 # vitybot module
+from vityBot import factoid
 
 
 cl = []
@@ -21,9 +23,8 @@ db = Client(env.DB_LINK)['vitybot-user-session']
 
 
 class User(object):
-    username = ""
+    username = "guest"
     password = ""
-    is_logged_in = False
     session_id = None
 
     @staticmethod
@@ -42,7 +43,6 @@ class IndexHandler(RequestHandler, User):
 
         if self.get_secure_cookie('username') is None:
             print "not found cookies"
-            User.is_logged_in = False
             self.redirect('/log')
 
         else:
@@ -50,7 +50,6 @@ class IndexHandler(RequestHandler, User):
             User.username = self.get_secure_cookie('username')
             User.password = self.get_secure_cookie('password')
             User.session_id = self.get_secure_cookie('session_id')
-            User.is_logged_in = True
             self.redirect('/node')
 
 
@@ -101,51 +100,94 @@ class LoginHandler(RequestHandler, User):
         self.redirect('/node')
 
 
-class BaseHandler(RequestHandler, User):
+class HomeHandler(RequestHandler, User):
     @removeslash
     @coroutine
     def get(self):
-        self.write
+        self.render('index.html',user=User.username)
+
 
 
 class LogoutHandler(RequestHandler, User):
+    @removeslash
     def get(self):
         if bool(self.get_cookie('username')):
             self.clear_all_cookies(path='/node', domain=None)
         self.redirect('/')
 
 
-class SocketHandler(WebSocketHandler):
+class BaseHandler(WebSocketHandler, User):
+
+    account = dict()
+    chats = []
+    def check_origin(self, origin):
+        return True
+
+    @coroutine
     def open(self):
+
         if self not in cl:
             cl.append(self)
         print "Connection open"
+        account = yield db['user_session'].find_one({'session_id': User.session_id})
+        BaseHandler.chats = account['chats']
 
     def on_message(self, message):
-        # self.message = message
-        self.write_message(message)
+        self.handle_query(message)
 
+    def handle_query(self, query):
+        answer = factoid(query)
+        # answer = 'something'
+        current_time = str(datetime.datetime.now())
+
+        json_data = {
+            'for_query': query,
+            'user': User.username,
+            'chats': BaseHandler.chats[-5:],
+            'reply': answer,
+            'time': current_time,
+        }
+        BaseHandler.chats.append({'query': query, 'reply': answer,'time': current_time})
+        self.write_message(json.dumps(json_data))
+
+    @coroutine
     def on_close(self):
         print "connection closed"
+        if User.username != '':
+            yield db['user_session'].update({'session_id': User.session_id},
+                                            {'username': User.username,
+                                             'session_id': User.session_id,
+                                             'chats': BaseHandler.chats
+                                             })
+
         if self in cl:
             cl.remove(self)
-            # self.write_message("connection closed by server")
+
+
+
+    def write_error(self, status_code, **kwargs):
+        json_data = {
+            'status': int(status_code),
+            'message': "Internal server error",
+            'answer': 'NULL'
+        }
+        self.write(json.dumps(json_data))
+
 
 
 settings = dict(
-    debug=True,
     cookie_secret=base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes)
+    # debug=True
 )
 
 app = Application(
     handlers=[
         (r'/', IndexHandler),
         (r'/log', Log),
-        (r'/node', BaseHandler),
+        (r'/node', HomeHandler),
         (r'/login', LoginHandler),
         (r'/logout', LogoutHandler),
-        (r'/ws', SocketHandler),
-        (r'/api', BaseHandler)
+        (r'/ws', BaseHandler)
     ],
     template_path=os.path.join(os.path.dirname(__file__), "template"),
     **settings)
