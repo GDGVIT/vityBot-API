@@ -1,3 +1,4 @@
+'''
 from tornado.web import RequestHandler, Application, removeslash
 from tornado.gen import coroutine
 from tornado.websocket import WebSocketHandler
@@ -13,27 +14,13 @@ import uuid
 import base64
 import requests
 import datetime
-
+'''
 # vitybot module
-from vityBot import factoid
+from vityBot.modules.NLU.domains.student_info import student_info 
 
-
+'''
 cl = []
 db = Client(env.DB_LINK)['vitybot-user-session']
-
-
-class User(object):
-    username = "guest"
-    password = ""
-    session_id = None
-
-    @staticmethod
-    def student_info(regNo, psswd):
-        url = "https://myffcs.in:10443/campus/vellore/login"
-        payload = dict(regNo=regNo, psswd=psswd)
-        res = requests.post(url, data=payload).json()
-
-        return res['status']['code'] == 0
 
 
 class IndexHandler(RequestHandler, User):
@@ -196,3 +183,4 @@ if __name__ == "__main__":
     server = HTTPServer(app)
     server.listen(8080)
     IOLoop.instance().start()
+'''
