@@ -1,0 +1,3 @@
+[submodule "vityBot"]
+	path = vityBot
+	url = https://github.com/GDGVIT/vityBot.git
